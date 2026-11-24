@@ -1,0 +1,54 @@
+// looper.v1's sessions: one client program's
+// connection, kept alive by its heartbeats. Routes:
+//   POST /v1/sessions
+//   POST /v1/sessions/{session_id}:heartbeat
+//   POST /v1/sessions/{session_id}:close
+syntax = "proto3";
+
+package looper.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Session {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    ACTIVE = 1;
+    CLOSED = 2;
+    // It missed its heartbeats. It is no longer a writer; its runs keep
+    // running.
+    EXPIRED = 3;
+  }
+
+  string id = 1;
+  string project = 2;
+  State state = 3;
+  // When it expires without another heartbeat.
+  google.protobuf.Timestamp expires_at = 4;
+  // How often the client should heartbeat.
+  double heartbeat_interval_s = 5;
+}
+
+message OpenSessionRequest {
+  string project = 1;
+  // A label for the console, not unique: 1 to 255 ASCII letters, digits, _
+  // or -. Empty for none.
+  string display_name = 2;
+}
+
+message OpenSessionResponse {
+  Session session = 1;
+}
+
+message HeartbeatSessionRequest {
+  string session_id = 1;
+}
+
+message HeartbeatSessionResponse {
+  Session session = 1;
+}
+
+message CloseSessionRequest {
+  string session_id = 1;
+}
+
+message CloseSessionResponse {}

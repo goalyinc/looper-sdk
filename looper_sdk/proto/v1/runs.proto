@@ -1,0 +1,133 @@
+// looper.v1's runs and their ordered calls. Routes:
+//   POST   /v1/runs
+//   GET    /v1/runs/{run_id}
+//   DELETE /v1/runs/{run_id}
+//   POST   /v1/runs/{run_id}:forwardBackward, :optimStep
+// Each ordered call answers once its operation is durable and ordered: its
+// receipt, in state QUEUED. Publishing, sampling, saves and suspension join
+// in later slices.
+syntax = "proto3";
+
+package looper.v1;
+
+import "google/protobuf/timestamp.proto";
+import "looper_sdk/proto/v1/losses.proto";
+import "looper_sdk/proto/v1/operations.proto";
+import "looper_sdk/proto/v1/values.proto";
+
+message Run {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    QUEUED = 1;
+    STARTING = 2;
+    ACTIVE = 3;
+    RECOVERING = 4;
+    SUSPENDED = 5;
+    RESUMING = 6;
+    FAILED = 7;
+    DELETED = 8;
+  }
+
+  string id = 1;
+  string project = 2;
+  TrainingConfig config = 3;
+  State state = 4;
+  uint64 epoch = 5;
+  // Legacy writer fields: the creating session and generation 1.
+  // Ownership cannot transfer.
+  string writer_session_id = 6;
+  uint64 writer_generation = 7;
+  // Completed optimizer steps.
+  uint64 step = 8;
+  // The newest step a restore point or a state checkpoint covers.
+  uint64 durable_step = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+// Creates a run, with the caller's session as its writer.
+message CreateRunRequest {
+  string session_id = 1;
+  // Unique within the session, so that a resend after a lost response
+  // returns the same run instead of creating another.
+  string key = 2;
+  TrainingConfig config = 3;
+}
+
+message CreateRunResponse {
+  Run run = 1;
+}
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message GetRunResponse {
+  Run run = 1;
+}
+
+// Cancels the run's queued operations, lets the running one finish, and
+// releases its GPUs.
+message DeleteRunRequest {
+  string run_id = 1;
+}
+
+message DeleteRunResponse {}
+
+message ForwardBackwardRequest {
+  string run_id = 1;
+  Submission submission = 2;
+  repeated Datum data = 3;
+  Loss loss = 4;
+  // The trainer's log probabilities of the data, which it no longer reports
+  //.
+  reserved 5;
+  reserved "return_logprobs";
+}
+
+message ForwardBackwardResponse {
+  Operation operation = 1;
+}
+
+// A step steps the run's optimizer and divides by its targets, at the
+// learning rate it names or else its optimizer's.
+message OptimStepRequest {
+  string run_id = 1;
+  Submission submission = 2;
+  reserved 3, 4;
+  reserved "adam", "normalize";
+  // This step's rate alone, finite and at least 0; unset takes the optimizer's.
+  optional double learning_rate = 5;
+}
+
+message OptimStepResponse {
+  Operation operation = 1;
+}
+
+// Returns after durable acceptance, not after trainer I/O.
+message SaveCheckpointRequest {
+  string run_id = 1;
+  Submission submission = 2;
+  string name = 3;
+  optional int32 ttl_s = 4;
+}
+message SaveCheckpointResponse { Operation operation = 1; }
+
+// POST /v1/runs/{run_id}:publishWeights. The run's current step, moved to
+// the run's sampler. Refused at acceptance with gradients
+// pending, as a save is.
+message PublishWeightsRequest {
+  string run_id = 1;
+  Submission submission = 2;
+}
+
+message PublishWeightsResponse { Operation operation = 1; }
+
+// An export of the weights alone, for sampling. Returns after
+// durable acceptance, not after trainer I/O.
+message SaveWeightsRequest {
+  string run_id = 1;
+  Submission submission = 2;
+  string name = 3;
+  optional int32 ttl_s = 4;
+}
+message SaveWeightsResponse { Operation operation = 1; }

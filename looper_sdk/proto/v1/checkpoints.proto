@@ -1,0 +1,55 @@
+// Project checkpoint registry. A name can move; save identities cannot.
+syntax = "proto3";
+package looper.v1;
+
+import "google/protobuf/timestamp.proto";
+import "looper_sdk/proto/v1/values.proto";
+
+message Checkpoint {
+  string id = 1;
+  string operation_id = 2;
+  string project = 3;
+  string principal = 4;
+  string source_run_id = 5;
+  Version version = 6;
+  uint64 size_bytes = 7;
+  google.protobuf.Timestamp created_at = 8;
+  string name = 9;
+  google.protobuf.Timestamp expires_at = 10;
+  ModelSpec model_spec = 11;
+  // Where the checkpoint is. A save succeeds once its step is
+  // saved on the run's GPUs; only a READY_TO_USE checkpoint is uploaded,
+  // named, and loadable. A server older than the stages sends none:
+  // every checkpoint it answers is ready to use.
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    UPLOADING = 1;
+    READY_TO_USE = 2;
+    FAILED = 3;
+  }
+  State state = 12;
+  string failure = 13;  // why a FAILED checkpoint failed, for people
+  // What it holds: resumable training state, from
+  // SaveCheckpoint, or an export of the weights alone, from SaveWeights. A
+  // server older than the kinds sends none: every checkpoint it answers is
+  // a state checkpoint.
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    STATE = 1;
+    WEIGHTS = 2;
+  }
+  Kind kind = 14;
+}
+// Session determines project scope; project is never a query override.
+message GetCheckpointRequest { string session_id = 1; string checkpoint_id = 2; }
+message GetCheckpointResponse { Checkpoint checkpoint = 1; }
+message GetCheckpointByNameRequest { string session_id = 1; string name = 2; }
+message GetCheckpointByNameResponse { Checkpoint checkpoint = 1; }
+message ListCheckpointsRequest {
+  string session_id = 1;
+  optional uint32 limit = 2;
+  optional string after_name = 3;
+}
+message ListCheckpointsResponse { repeated Checkpoint checkpoints = 1; }
+message DeleteCheckpointRequest { string session_id = 1; string checkpoint_id = 2; }
+message DeleteCheckpointResponse {}

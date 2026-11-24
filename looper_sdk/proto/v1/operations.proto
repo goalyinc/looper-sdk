@@ -1,0 +1,179 @@
+// looper.v1's operations: one accepted request on
+// a run, its state, and its result once it has run. Routes:
+//   GET  /v1/operations/{operation_id}
+//   POST /v1/operations/{operation_id}:await
+//   GET  /v1/runs/{run_id}/operations?key=…
+syntax = "proto3";
+
+package looper.v1;
+
+import "google/protobuf/timestamp.proto";
+import "looper_sdk/proto/v1/errors.proto";
+import "looper_sdk/proto/v1/checkpoints.proto";
+import "looper_sdk/proto/v1/values.proto";
+
+// Sent with every ordered call on a run: who submits it, under which key,
+// and after what.
+message Submission {
+  // The run's creating session and the legacy writer generation (always 1).
+  string session_id = 1;
+  uint64 writer_generation = 2;
+  // The run's epoch the client last saw. A new key with an older epoch is
+  // refused with RUN_ROLLED_BACK.
+  uint64 epoch = 3;
+  // The idempotency key, unique within the run's epoch: 1 to 256 characters.
+  string key = 4;
+  // Operations of other runs, accepted earlier by the same session, that
+  // must succeed before this one runs.
+  repeated string after = 5;
+}
+
+// One datum's results, in the order of the call's data.
+message DatumResult {
+  optional string datum_id = 1;
+  // The trainer's log probabilities, which it no longer reports.
+  reserved 2;
+  reserved "logprobs";
+}
+
+// What a forward_backward counted from its request; the loss and its
+// metrics come with the step.
+message ForwardBackwardResult {
+  // The batch's own loss and the loss's metrics, which the trainer no
+  // longer reports.
+  reserved 1, 2, 4;
+  reserved "loss_sum", "weight_sum", "metrics";
+  uint64 weighted_targets = 3;
+  repeated DatumResult data = 5;
+  // Every token of every datum; unset in a result recorded before Looper
+  // counted them.
+  optional uint64 num_tokens = 6;
+}
+
+// Both halves of the reduction.
+message StepResult {
+  // Completed optimizer steps, this one included.
+  uint64 step = 1;
+  Version version = 2;
+  double loss_sum = 3;
+  double denominator = 4;
+  uint64 weighted_targets = 5;
+  double weight_sum = 6;
+  map<string, double> metrics = 7;
+  // Before clipping.
+  double grad_norm = 8;
+  bool clipped = 9;
+  double lr = 10;
+  // The num_tokens of the forward_backwards the step applied; unset when
+  // one of them predates the count.
+  optional uint64 num_tokens = 11;
+}
+
+// What a publish_weights moved.
+message PublishResult {
+  // The version the run's sampler now serves.
+  Version version = 1;
+  // The sampler it reached.
+  string sampler_id = 2;
+}
+
+message Operation {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    FORWARD_BACKWARD = 1;
+    // A forward, which Looper no longer has.
+    reserved 2;
+    reserved "FORWARD";
+    OPTIM_STEP = 3;
+    SAVE_CHECKPOINT = 4;
+    PUBLISH_WEIGHTS = 5;
+    SAVE_WEIGHTS = 6;
+  }
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    QUEUED = 1;
+    RUNNING = 2;
+    // Its attempt's outcome was not recorded. It blocks the run's later
+    // operations until the trainer's receipt or a rollback resolves it.
+    OUTCOME_UNKNOWN = 3;
+    SUCCEEDED = 4;
+    FAILED = 5;
+    CANCELLED = 6;
+  }
+  // What a queued operation waits for, and who owns that wait.
+  enum QueueState {
+    QUEUE_STATE_UNSPECIFIED = 0;
+    WAITING_FOR_GPUS = 1;
+    STARTING = 2;
+    RESUMING = 3;
+    RECOVERING = 4;
+    SPEND_BLOCKED = 5;
+    // For an earlier operation of its run, or for an `after` operation.
+    WAITING = 6;
+  }
+
+  string id = 1;
+  string run_id = 2;
+  // The run's acceptance order: 1, 2, 3, with no gaps.
+  uint64 seq = 3;
+  string key = 4;
+  uint64 epoch = 5;
+  Kind kind = 6;
+  State state = 7;
+  // Set while the operation is queued.
+  QueueState queue_state = 8;
+  // A forward's result, which Looper no longer has.
+  reserved 10;
+  reserved "forward";
+  // Set once it succeeded: the arm of its kind.
+  oneof result {
+    ForwardBackwardResult forward_backward = 9;
+    StepResult optim_step = 11;
+    Checkpoint save_checkpoint = 18;
+    PublishResult publish_weights = 20;
+    Checkpoint save_weights = 21;
+  }
+  // Set once it failed or was cancelled.
+  Error error = 12;
+  // The run's durable step as of this answer.
+  uint64 durable_step = 13;
+  // Set on a succeeded operation that a rollback lost: the recovery's id.
+  optional string rolled_back_by = 14;
+  google.protobuf.Timestamp accepted_at = 15;
+  google.protobuf.Timestamp started_at = 16;
+  google.protobuf.Timestamp finished_at = 17;
+  // Original detailed results are unavailable after owner cleanup fences them.
+  optional google.protobuf.Timestamp raw_data_expired_at = 19;
+}
+
+message GetOperationRequest {
+  string operation_id = 1;
+}
+
+message GetOperationResponse {
+  Operation operation = 1;
+}
+
+// A long poll: the answer comes once the operation is resolved, or after
+// `timeout_s`, at most 30 s, with its state and queue state then.
+message AwaitOperationRequest {
+  string operation_id = 1;
+  optional double timeout_s = 2;
+}
+
+message AwaitOperationResponse {
+  Operation operation = 1;
+}
+
+// The receipt of a submit whose response was lost.
+message FindOperationRequest {
+  string run_id = 1;
+  string key = 2;
+  // The run's current epoch when absent.
+  optional uint64 epoch = 3;
+}
+
+message FindOperationResponse {
+  // Unset when no operation has the key in that epoch.
+  Operation operation = 1;
+}

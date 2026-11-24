@@ -1,0 +1,135 @@
+// looper.v1's standalone sampling: a request's
+// and a result's bytes, as the service keeps them and the wire carries them.
+// Token ids, never text.
+syntax = "proto3";
+
+package looper.v1;
+
+import "google/protobuf/timestamp.proto";
+import "looper_sdk/proto/v1/errors.proto";
+import "looper_sdk/proto/v1/values.proto";
+
+message SamplingParams {
+  uint32 max_tokens = 1;
+  double temperature = 2;
+  double top_p = 3;
+  repeated int32 stop_token_ids = 4;
+}
+
+message SampleRequest {
+  repeated int32 prompt = 1;
+  SamplingParams params = 2;
+  uint32 n = 3;  // completions of the one prompt
+}
+
+message SampleSequence {
+  enum FinishReason {
+    FINISH_REASON_UNSPECIFIED = 0;
+    STOP = 1;
+    LENGTH = 2;
+  }
+  repeated int32 token_ids = 1;
+  repeated float logprobs = 2;  // one per token: the engine's chosen-token logprob
+  FinishReason finish_reason = 3;
+  uint32 cached_tokens = 4;  // prompt tokens the engine's prefix cache served
+  // The oldest version that generated one of its tokens: a run's
+  // sampler serves each version its run publishes. Absent for a base
+  // reference, and in a result recorded before sequences named theirs.
+  optional Version version = 5;
+}
+
+// What a request's engine work counted:
+// the prompt once whatever its n, every generated token of its n
+// sequences, and the prompt tokens the engine's prefix cache served.
+message SamplingUsage {
+  uint64 num_prompt_tokens = 1;
+  uint64 num_generated_tokens = 2;
+  uint64 num_cached_tokens = 3;  // at most num_prompt_tokens
+}
+
+message SampleResult {
+  repeated SampleSequence sequences = 1;
+  string model = 2;            // the catalog model
+  string checkpoint_name = 3;  // as the sampler was created with it
+  // A checkpoint's version. Absent for a base reference, and for a run's
+  // sampler, whose sequences each name their own.
+  optional Version version = 4;
+}
+
+// A standalone sampler and its routes:
+// POST /v1/samplers, GET /v1/samplers/{id}, POST /v1/samplers/{id}:stop,
+// POST /v1/samplers/{id}:sample, GET /v1/samplers/{id}/operations/{op},
+// POST /v1/samplers/{id}/operations/{op}:await. A GET names its session in
+// the query, `?session_id=`.
+message SamplerConfig {
+  // A project checkpoint's name, base:<model>, or run:<run_id> for a run
+  // of the same session, whose published weights it serves.
+  string checkpoint_name = 1;
+  uint32 max_seq_len = 2;
+  uint32 max_concurrent_sequences = 3;
+}
+
+message Sampler {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    STARTING = 1;
+    READY = 2;
+    FAILED = 3;
+    STOPPING = 4;
+    STOPPED = 5;
+  }
+  string id = 1;
+  SamplerConfig config = 2;
+  State state = 3;
+  string model = 4;
+  // A checkpoint's version, or the version a run last published to its
+  // sampler. Absent for a base reference, and before a run's first publish.
+  optional Version version = 5;
+  google.protobuf.Timestamp created_at = 6;
+  optional Error error = 7;  // why it failed
+  // Its succeeded requests' usage, summed; absent when one predates the count.
+  optional SamplingUsage usage = 8;
+}
+
+message CreateSamplerRequest {
+  string session_id = 1;
+  string key = 2;  // the creation key: a resend answers the same sampler
+  SamplerConfig config = 3;
+}
+message CreateSamplerResponse { Sampler sampler = 1; }
+message GetSamplerResponse { Sampler sampler = 1; }
+message StopSamplerRequest { string session_id = 1; }
+message StopSamplerResponse { Sampler sampler = 1; }
+
+message SampleOperation {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    QUEUED = 1;
+    RUNNING = 2;
+    SUCCEEDED = 3;
+    FAILED = 4;
+    CANCELLED = 5;
+  }
+  string id = 1;
+  string key = 2;
+  string sampler_id = 3;
+  State state = 4;
+  optional Error error = 5;          // a failed or cancelled one's
+  optional google.protobuf.Timestamp raw_data_expired_at = 7;
+  optional SampleResult result = 6;  // a succeeded one's, from an await only
+  // A succeeded one's; absent before, or for one recorded before the count.
+  optional SamplingUsage usage = 8;
+}
+
+message SubmitSampleRequest {
+  string session_id = 1;
+  string key = 2;  // a resend under it answers the same operation
+  SampleRequest request = 3;
+}
+message SubmitSampleResponse { SampleOperation operation = 1; }
+message GetSampleOperationResponse { SampleOperation operation = 1; }
+message AwaitSampleOperationRequest {
+  string session_id = 1;
+  optional double timeout_s = 2;  // the API waits at most this, and at most 30 s
+}
+message AwaitSampleOperationResponse { SampleOperation operation = 1; }

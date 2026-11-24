@@ -1,0 +1,121 @@
+// looper.v1's values. Bodies are binary
+// protobuf or protobuf's JSON mapping, so a field keeps both its number and
+// its name; scripts/check_protos.sh refuses a change that breaks either.
+//
+// Where the wire requires a field that may legitimately be 0 or false, the
+// field is `optional`, so that the API can tell it was given.
+syntax = "proto3";
+
+package looper.v1;
+
+// The weights after `step` optimizer steps of run `run_id`, in its epoch
+// `epoch`, which counts the run's rollbacks: a step number names one set of
+// weights only within an epoch.
+message Version {
+  string run_id = 1;
+  uint64 epoch = 2;
+  uint64 step = 3;
+}
+
+// What a run trains, and how much: Looper sizes the run's GPUs from the
+// three sizing fields, which are fixed for the run's life.
+message TrainingConfig {
+  // Low-rank factors over the frozen base: rank-`rank` factors on what each switch names.
+  message Lora {
+    uint32 rank = 1;
+    optional bool train_attn = 2;
+    optional bool train_mlp = 3;
+    optional bool train_unembed = 4;
+  }
+  // Every parameter trains.
+  message Full {}
+
+  // A model of the catalog, by its Hugging Face name: "Qwen/Qwen3.5-9B".
+  string model = 1;
+  oneof kind {
+    Lora lora = 2;
+    Full full = 3;
+  }
+  // The tokens one optimizer step trains, over its forward_backward calls.
+  uint64 tokens_per_step = 4;
+  // The longest sequence the run trains or samples.
+  uint64 max_seq_len = 5;
+  // The tokens one step samples; 0 gives the run no sampler.
+  uint64 sampled_tokens_per_step = 6;
+  // What every optim_step steps; unset trains with the
+  // profile's.
+  Optimizer optimizer = 7;
+}
+
+// A run's optimizer, chosen once at create_run: one arm per kind, which the
+// trainer builds. The wire
+// requires every setting; one whose absence means something says what.
+message Optimizer {
+  // AdamW over every trainable parameter.
+  message AdamW {
+    double learning_rate = 1;  // above 0
+    optional double beta1 = 2;  // in [0, 1)
+    optional double beta2 = 3;  // in [0, 1)
+    double eps = 4;  // above 0
+    optional double weight_decay = 5;  // decoupled, at least 0
+    optional double max_grad_norm = 6;  // the global norm a step clips to; unset clips nothing
+  }
+  // Muon over the model's matrices and AdamW over every other parameter, at
+  // one learning rate and one weight decay.
+  message Muon {
+    double learning_rate = 1;  // both halves', above 0
+    optional double weight_decay = 2;  // both halves', decoupled, at least 0
+    optional double momentum = 3;  // Muon's, in [0, 1)
+    optional bool nesterov = 4;
+    uint64 ns_steps = 5;  // Newton-Schulz iterations, at least 1
+    optional double beta1 = 6;  // the AdamW half's, in [0, 1)
+    optional double beta2 = 7;  // the AdamW half's, in [0, 1)
+    double eps = 8;  // the AdamW half's, above 0
+    optional double max_grad_norm = 9;  // the global norm a step clips to; unset clips nothing
+  }
+  oneof kind {
+    AdamW adamw = 1;
+    Muon muon = 2;
+  }
+}
+
+// Source run model identity and exact trainable parameters.
+message ModelSpec {
+  string model = 1;
+  oneof kind {
+    TrainingConfig.Lora lora = 2;
+    TrainingConfig.Full full = 3;
+  }
+}
+
+// One float per token.
+message Column {
+  repeated float values = 1;
+}
+
+// One sequence: each
+// token after the first is a target, predicted from the tokens before it.
+message Datum {
+  // A target per input token, the datum's first form.
+  reserved 1, 2;
+  reserved "input_tokens", "targets";
+
+  repeated int32 tokens = 5;
+  // One per token, 0 or 1: whether the term for predicting tokens[i] counts.
+  // weights[0] is 0, since nothing predicts the first token, and at least
+  // one other weight is 1. A weight of 0 masks its token.
+  repeated float weights = 6;
+  // Per-token columns, by name, aligned to `tokens` as `weights` is:
+  // "logprobs", for Grpo and Dapo. The columns must be exactly those the
+  // call's loss reads.
+  map<string, Column> columns = 3;
+  // Echoed in the datum's results.
+  optional string datum_id = 4;
+  // The datum's score, the group of samples it is compared within, and how
+  // many datums that group has: all three or none. Exactly the datums of a
+  // loss that compares groups carry them, and a group is sent whole within
+  // one forward_backward.
+  optional double reward = 7;
+  optional string group_id = 8;
+  optional uint32 group_size = 9;
+}

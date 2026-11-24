@@ -1,0 +1,72 @@
+// looper.v1's errors: the body of every refused
+// request, and of every failed operation. Retry semantics travel as data, so
+// a caller routes on `retryable` without parsing `message`.
+syntax = "proto3";
+
+package looper.v1;
+
+message Error {
+  // The registered codes, with their HTTP statuses. A code
+  // added later decodes as its number in an older client.
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    INVALID_ARGUMENT = 1;         // 400
+    UNAUTHENTICATED = 2;          // 401
+    SPEND_REFUSED = 3;            // 402
+    PERMISSION_DENIED = 4;        // 403
+    QUOTA_EXCEEDED = 5;           // 403
+    NOT_FOUND = 6;                // 404
+    IDEMPOTENCY_CONFLICT = 7;     // 409
+    WRITER_SUPERSEDED = 8;        // 409
+    SESSION_EXPIRED = 9;          // 409
+    DEPENDENCY_FAILED = 10;       // 409
+    RUN_ROLLED_BACK = 11;         // 409
+    GRADIENTS_PENDING = 12;       // 409
+    VERSION_SUPERSEDED = 13;      // 409
+    RUN_SUSPENDED = 14;           // 409
+    CANCELLED = 15;               // 409
+    RUN_STATE_LOST = 16;          // 410
+    PAYLOAD_TOO_LARGE = 17;       // 413
+    INCOMPLETE_ACCUMULATION = 18; // 422
+    EMPTY_STEP = 19;              // 422
+    CAPACITY_EXHAUSTED = 20;      // 429
+    RUN_NOT_READY = 21;           // 503
+    UNAVAILABLE = 22;             // 503
+    INTERNAL = 23;                // 500
+    CHECKPOINT_NOT_READY = 24;    // 409
+    QUEUE_TIMEOUT = 25;           // 409
+    SAMPLER_FAILED = 26;          // 409
+    RESULT_EXPIRED = 27;         // 410
+    CHECKPOINT_NAME_TAKEN = 28;   // 409
+  }
+  // Whose failure it is: the caller's request, or the service.
+  enum Category {
+    CATEGORY_UNSPECIFIED = 0;
+    USER = 1;
+    SERVER = 2;
+  }
+
+  Code code = 1;
+  Category category = 2;
+  // The same request may succeed later or elsewhere.
+  bool retryable = 3;
+  // For people; never parsed.
+  string message = 4;
+  // How long to wait before a retry, when the service advertises it
+  // (CAPACITY_EXHAUSTED).
+  optional double retry_after_s = 5;
+  oneof details {
+    RunRolledBack run_rolled_back = 10;
+  }
+}
+
+// What a rollback restored and what it lost. The client adopts
+// `epoch`; the lost seqs are first_lost_seq through last_lost_seq, an empty
+// range when last_lost_seq < first_lost_seq.
+message RunRolledBack {
+  uint64 epoch = 1;
+  uint64 restored_step = 2;
+  uint64 restored_seq = 3;
+  uint64 first_lost_seq = 4;
+  uint64 last_lost_seq = 5;
+}

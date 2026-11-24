@@ -1,0 +1,37 @@
+// looper.v1's losses: a typed value chosen per call, never code. Each is a
+// sum over targets; the trainer runs the loss of its name with its
+// settings, and forms the advantages of a loss that compares groups from
+// the datums' rewards.
+syntax = "proto3";
+
+package looper.v1;
+
+message Loss {
+  // −Σ log π_θ(y). Reads no column and compares no groups.
+  message CrossEntropy {}
+  // −Σ min(r·A, clip(r, 1 − clip_low, 1 + clip_high)·A)
+  // + kl_weight·Σ(r − 1 − log r), with r = exp(log π_θ(y) − q) and A the
+  // datum's reward less its group's mean, over the group's standard
+  // deviation when scale_by_std. Reads "logprobs" (q, the sampler's record
+  // of the behavior policy), and a reward and a group on every datum. The
+  // bounds are offsets from 1; the wire requires
+  // both. kl_weight unset is 0, no penalty, and scale_by_std unset is true,
+  // so a loss sent before they existed still decodes as it was.
+  message Grpo {
+    optional double clip_low = 1;
+    optional double clip_high = 2;
+    optional double kl_weight = 3;
+    optional bool scale_by_std = 4;
+  }
+
+  // Losses over advantages the client formed, which no trainer trained.
+  reserved 2, 3;
+  reserved "importance_sampling", "ppo";
+
+  oneof loss {
+    CrossEntropy cross_entropy = 1;
+    Grpo grpo = 4;
+    // GRPO with DAPO's clip-higher, kept apart so it decodes as Dapo.
+    Grpo dapo = 5;
+  }
+}

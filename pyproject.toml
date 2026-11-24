@@ -1,0 +1,32 @@
+[project]
+name = "goaly-looper"
+dynamic = ["version"]
+description = "Looper's SDK: the client and the typed values of Looper's API, looper.v1."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+# Operation[T] is a PEP 695 generic.
+requires-python = ">=3.12"
+# Ranges, never pins: an exact pin in a published wheel would conflict with
+# the rest of a user's environment. Each runs from the oldest version we test
+# (looper-isolated, in .github/workflows/ci.yml) to the next major; the root's
+# uv.lock resolves them with its exact pins.
+dependencies = [
+    # From the generator's version: grpcio-tools 1.81.1's modules refuse a
+    # protobuf runtime older than 6.33.5, so each bump raises this floor.
+    "protobuf>=6.33.5,<7",
+    # The clients' HTTP: its AsyncClient, and the transports tests put in
+    # front of an API in their own process.
+    "httpx>=0.28.1,<1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "looper_sdk/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["looper_sdk"]
+exclude = ["**/unit_tests"]
