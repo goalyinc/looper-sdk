@@ -34,8 +34,8 @@ export LOOPER_API_KEY=sk-...
 ```
 
 Or pass it as `api_key=` in `ServiceClient.Config`, for example from your
-secret store. Keep it out of notebooks and source files. Without a valid
-key, `build()` raises `Unauthenticated`.
+secret store. Don't commit a key, or share a notebook that holds one.
+Without a valid key, `build()` raises `Unauthenticated`.
 
 Your organization also needs credit: without it, the service refuses new
 work with `SpendRefused`.
