@@ -116,3 +116,33 @@ class DeleteCheckpointRequest(_message.Message):
 class DeleteCheckpointResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class GetCheckpointDownloadRequest(_message.Message):
+    __slots__ = ("session_id", "checkpoint_id", "paths")
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    CHECKPOINT_ID_FIELD_NUMBER: _ClassVar[int]
+    PATHS_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    checkpoint_id: str
+    paths: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, session_id: _Optional[str] = ..., checkpoint_id: _Optional[str] = ..., paths: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class DownloadFile(_message.Message):
+    __slots__ = ("path", "size_bytes", "crc32c", "url")
+    PATH_FIELD_NUMBER: _ClassVar[int]
+    SIZE_BYTES_FIELD_NUMBER: _ClassVar[int]
+    CRC32C_FIELD_NUMBER: _ClassVar[int]
+    URL_FIELD_NUMBER: _ClassVar[int]
+    path: str
+    size_bytes: int
+    crc32c: int
+    url: str
+    def __init__(self, path: _Optional[str] = ..., size_bytes: _Optional[int] = ..., crc32c: _Optional[int] = ..., url: _Optional[str] = ...) -> None: ...
+
+class GetCheckpointDownloadResponse(_message.Message):
+    __slots__ = ("files", "expires_at")
+    FILES_FIELD_NUMBER: _ClassVar[int]
+    EXPIRES_AT_FIELD_NUMBER: _ClassVar[int]
+    files: _containers.RepeatedCompositeFieldContainer[DownloadFile]
+    expires_at: _timestamp_pb2.Timestamp
+    def __init__(self, files: _Optional[_Iterable[_Union[DownloadFile, _Mapping]]] = ..., expires_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...

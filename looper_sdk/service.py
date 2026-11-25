@@ -11,15 +11,25 @@ import dataclasses
 import math
 import os
 import re
+from collections.abc import Sequence
+from datetime import UTC
+from pathlib import Path
 from types import TracebackType
 from typing import Self
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from uuid import uuid4
 
 import httpx
 
 from looper_sdk import wire
 from looper_sdk.checkpoints import Checkpoint, CheckpointState
+from looper_sdk.download import (
+    DownloadObserver,
+    DownloadResult,
+    SignedFile,
+    SignedFiles,
+    download,
+)
 from looper_sdk.errors import CheckpointFailed, CreationError, CreationTimeout, LooperError
 from looper_sdk.operations import LONG_POLL_S
 from looper_sdk.proto.v1 import checkpoints_pb2, runs_pb2, sampling_pb2
@@ -43,6 +53,10 @@ API_KEY_VARIABLE = "LOOPER_API_KEY"
 CHECKPOINT_POLL_S = 1.0
 
 _DISPLAY_NAME = re.compile(r"[A-Za-z0-9_-]{1,255}")
+# Files whose URLs one request signs again, which keeps its query string short.
+SIGN_BATCH = 64
+# Storage's deadlines: a read with no byte for this long is retried.
+STORAGE_TIMEOUT = httpx.Timeout(60.0, connect=30.0, pool=None)
 
 
 def _check_key(key: str, source: str) -> str:
@@ -130,7 +144,9 @@ class ServiceClient:
             main, sampling = transport(), transport()
             try:
                 session = await open_session(main, self.project, self.display_name)
-                return ServiceClient(session, sampling=sampling)
+                return ServiceClient(
+                    session, sampling=sampling, storage_transport=runtime.storage_transport
+                )
             except BaseException:
                 await main.close()
                 await sampling.close()
@@ -143,13 +159,24 @@ class ServiceClient:
         Attributes:
             transport: The HTTP transport, such as one in front of an API
                 in the caller's process; None for httpx's own.
+            storage_transport: The transport that downloads take to
+                storage's signed URLs, such as a test's storage; None for
+                httpx's own.
         """
 
         transport: httpx.AsyncBaseTransport | None = None
+        storage_transport: httpx.AsyncBaseTransport | None = None
 
-    def __init__(self, session: Session, *, sampling: Transport):
+    def __init__(
+        self,
+        session: Session,
+        *,
+        sampling: Transport,
+        storage_transport: httpx.AsyncBaseTransport | None = None,
+    ):
         self._session = session
         self._sampling = sampling
+        self._storage_transport = storage_transport
 
     @property
     def session(self) -> Session:
@@ -329,6 +356,70 @@ class ServiceClient:
             None,
             checkpoints_pb2.DeleteCheckpointResponse,
         )
+
+    @session_operation
+    async def _signed_files(self, checkpoint_id: str, paths: Sequence[str] | None) -> SignedFiles:
+        """The checkpoint's files with fresh URLs: all of them, or ``paths``,
+        asked ``SIGN_BATCH`` at a time."""
+        route = f"/v1/checkpoints/{quote(checkpoint_id, safe='')}/download?"
+        batches = (
+            [None]
+            if paths is None
+            else [paths[i : i + SIGN_BATCH] for i in range(0, len(paths), SIGN_BATCH)]
+        )
+        files: list[SignedFile] = []
+        expires_at = None
+        for batch in batches:
+            query = [("session_id", self.session.id)] + [("path", path) for path in batch or ()]
+            answer = await self.session.transport.call(
+                "GET", route + urlencode(query), None, checkpoints_pb2.GetCheckpointDownloadResponse
+            )
+            files += (
+                SignedFile(
+                    path=file.path, size_bytes=file.size_bytes, crc32c=file.crc32c, url=file.url
+                )
+                for file in answer.files
+            )
+            batch_expires_at = answer.expires_at.ToDatetime(tzinfo=UTC)
+            expires_at = min(expires_at or batch_expires_at, batch_expires_at)
+        assert expires_at is not None
+        return SignedFiles(files=tuple(files), expires_at=expires_at)
+
+    async def download_checkpoint(
+        self,
+        checkpoint_id: str,
+        directory: str | os.PathLike[str],
+        *,
+        verify: bool = False,
+        parallel: int = 8,
+        observer: DownloadObserver | None = None,
+    ) -> DownloadResult:
+        """Downloads a ready weights checkpoint's files into ``directory``.
+        Run it again after a stop: it continues from the bytes on disk.
+        ``verify`` checks finished files again; ``observer`` follows
+        progress. ``DownloadError`` means the directory or a file needs the
+        user."""
+        self.session.check_open()
+        # A client of its own, which sends no API key: each signed URL is its own credential.
+        async with httpx.AsyncClient(
+            transport=self._storage_transport,
+            timeout=STORAGE_TIMEOUT,
+            headers={"accept-encoding": "identity"},
+            limits=httpx.Limits(max_connections=parallel, max_keepalive_connections=parallel),
+        ) as client:
+
+            async def sign(paths: Sequence[str] | None) -> SignedFiles:
+                return await self._signed_files(checkpoint_id, paths)
+
+            return await download(
+                checkpoint_id=checkpoint_id,
+                directory=Path(directory),
+                sign=sign,
+                client=client,
+                verify=verify,
+                parallel=parallel,
+                observer=observer,
+            )
 
     async def close(self, *, timeout_s: float | None = CLOSE_TIMEOUT_S) -> None:
         """Closes the session. Its backend runs and samplers are retired

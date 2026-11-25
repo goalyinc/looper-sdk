@@ -52,12 +52,17 @@ Opens the program's session.
 What a client is built over, besides its config.
 
 ```python
-ServiceClient.Runtime(*, transport: httpx.AsyncBaseTransport | None = None)
+ServiceClient.Runtime(
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+    storage_transport: httpx.AsyncBaseTransport | None = None,
+)
 ```
 
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `transport` | `httpx.AsyncBaseTransport \| None` | `None` | The HTTP transport, such as one in front of an API in the caller's process; None for httpx's own. |
+| `storage_transport` | `httpx.AsyncBaseTransport \| None` | `None` | The transport that downloads take to storage's signed URLs, such as a test's storage; None for httpx's own. |
 
 ### ServiceClient.create_training_client
 
@@ -153,6 +158,25 @@ the project does not name deletes nothing: a `FAILED` checkpoint
 holds no name, so `get_checkpoint` still reads it. A checkpoint still
 being exported raises `CheckpointNotReady`: delete it once it is
 `READY_TO_USE`.
+
+### ServiceClient.download_checkpoint
+
+```python
+async def download_checkpoint(
+    checkpoint_id: str,
+    directory: str | os.PathLike[str],
+    *,
+    verify: bool = False,
+    parallel: int = 8,
+    observer: DownloadObserver | None = None,
+) -> DownloadResult
+```
+
+Downloads a ready weights checkpoint's files into `directory`.
+Run it again after a stop: it continues from the bytes on disk.
+`verify` checks finished files again; `observer` follows
+progress. `DownloadError` means the directory or a file needs the
+user.
 
 ### ServiceClient.close
 

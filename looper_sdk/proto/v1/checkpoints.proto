@@ -53,3 +53,23 @@ message ListCheckpointsRequest {
 message ListCheckpointsResponse { repeated Checkpoint checkpoints = 1; }
 message DeleteCheckpointRequest { string session_id = 1; string checkpoint_id = 2; }
 message DeleteCheckpointResponse {}
+// A weights checkpoint's files, each with a signed URL to read it.
+// GET /v1/checkpoints/{checkpoint_id}/download takes
+// these as query parameters: session_id, and path once per file asked for.
+// With no path, it answers every file; a path its listing lacks is
+// INVALID_ARGUMENT.
+message GetCheckpointDownloadRequest {
+  string session_id = 1;
+  string checkpoint_id = 2;
+  repeated string paths = 3;
+}
+message DownloadFile {
+  string path = 1;        // relative to the checkpoint, "/"-separated
+  uint64 size_bytes = 2;
+  fixed32 crc32c = 3;     // the object's CRC32C (Castagnoli), as storage holds it
+  string url = 4;         // one GET of this file alone, until expires_at
+}
+message GetCheckpointDownloadResponse {
+  repeated DownloadFile files = 1;
+  google.protobuf.Timestamp expires_at = 2;  // when every url stops working
+}

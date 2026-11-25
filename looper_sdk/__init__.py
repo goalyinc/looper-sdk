@@ -1,6 +1,8 @@
 """Looper's SDK: the client and the typed values of Looper's API, ``looper.v1``.
 
-It imports nothing of ours, so it installs and runs on its own, with httpx and protobuf.
+It imports nothing of ours, so it installs and runs on its own, with httpx,
+protobuf and google-crc32c. ``ServiceClient.download_checkpoint``, and the
+``looper download`` command over it, download a weights checkpoint's files.
 ``ServiceClient`` opens the program's session; each run it creates has
 a ``TrainingClient``, and each operation it submits an
 ``Operation``. Each sampler it creates has a
@@ -10,6 +12,13 @@ name is importable from here.
 
 from looper_sdk._version import __version__
 from looper_sdk.checkpoints import Checkpoint, CheckpointState, StateCheckpoint, WeightsCheckpoint
+from looper_sdk.download import (
+    DownloadError,
+    DownloadObserver,
+    DownloadPlan,
+    DownloadResult,
+    InsufficientSpace,
+)
 from looper_sdk.errors import (
     Cancelled,
     CapacityExhausted,
@@ -75,6 +84,11 @@ __all__ = [
     "StateCheckpoint",
     "WeightsCheckpoint",
     "CheckpointState",
+    "DownloadError",
+    "DownloadObserver",
+    "DownloadPlan",
+    "DownloadResult",
+    "InsufficientSpace",
     "Cancelled",
     "CapacityExhausted",
     "Category",

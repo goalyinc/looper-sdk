@@ -18,7 +18,13 @@ dependencies = [
     # The clients' HTTP: its AsyncClient, and the transports tests put in
     # front of an API in their own process.
     "httpx>=0.28.1,<1",
+    # A download's checksums: storage keeps no MD5 for files uploaded in
+    # parts, and 2 TB is too slow to check without C.
+    "google-crc32c>=1.9.0,<2",
 ]
+
+[project.scripts]
+looper = "looper_sdk.cli:entry"
 
 [build-system]
 requires = ["hatchling"]

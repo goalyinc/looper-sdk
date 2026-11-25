@@ -554,3 +554,68 @@ of text, `LENGTH` at `max_tokens`.
 |---|---|
 | `STOP` | `'stop'` |
 | `LENGTH` | `'length'` |
+
+## DownloadResult
+
+A finished download: every file complete and correct.
+
+```python
+DownloadResult(*, directory: Path, files: int, size_bytes: int)
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `directory` | `Path` | required | Where the files are, as a model directory. |
+| `files` | `int` | required | How many files the checkpoint has. |
+| `size_bytes` | `int` | required | The checkpoint's bytes, all on disk. |
+
+## DownloadPlan
+
+What a download found on disk before its first byte.
+
+```python
+DownloadPlan(*, files: int, size_bytes: int, on_disk_bytes: int)
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `files` | `int` | required | The checkpoint's files. |
+| `size_bytes` | `int` | required | The checkpoint's bytes. |
+| `on_disk_bytes` | `int` | required | Bytes already on disk, finished or partial, which the download keeps. |
+
+## DownloadObserver
+
+What a download tells its caller as it goes, such as a progress bar.
+None of its methods ever receives a URL.
+
+### DownloadObserver.started
+
+```python
+def started(plan: DownloadPlan) -> None
+```
+
+Once, before the first byte: what is to come and what is on disk.
+
+### DownloadObserver.advanced
+
+```python
+def advanced(size_bytes: int) -> None
+```
+
+Bytes written; negative when a file starts again from byte 0.
+
+### DownloadObserver.finished
+
+```python
+def finished(path: str) -> None
+```
+
+A file is complete and correct, with its final name.
+
+### DownloadObserver.notice
+
+```python
+def notice(message: str) -> None
+```
+
+A message for people: a lost connection, a file downloaded again.

@@ -37,6 +37,8 @@ Generated from the docstrings of goaly-looper 0.1.0b5. Import every name from `l
 | `SamplerFailed` | `LooperError` | `SAMPLER_FAILED` | no | `server` | The sampler ended for good: it failed or stopped answering, the service restarted, or its run lost its trainer. |
 | `ResultExpired` | `LooperError` | `RESULT_EXPIRED` | no | `user` | The computation succeeded, but its original raw result was reclaimed. |
 | `CheckpointNameTaken` | `LooperError` | `CHECKPOINT_NAME_TAKEN` | no | `user` | An export's name, `<source>-hf`, is held by a live checkpoint that is not an export of its source, or reserved by another source's export in flight. |
+| `DownloadError` | `RuntimeError` | — | no | — | A download that cannot go on without the user: the directory holds something else, or a file is wrong again and again. |
+| `InsufficientSpace` | `DownloadError` | — | no | — | The disk lacks the room for the bytes still to come. |
 | [`CheckpointFailed`](#checkpointfailed) | `RuntimeError` | — | no | — | A save succeeded, but its checkpoint's upload did not finish, or an export did not, so it is not usable. |
 | [`CreationError`](#creationerror) | `RuntimeError` | — | per instance | — | A creation's service failure, with its recovery context. |
 | [`CreationTimeout`](#creationtimeout) | `TimeoutError` | — | yes | — | Creation stopped waiting; the backend run may still exist. |
