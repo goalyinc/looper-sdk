@@ -89,7 +89,7 @@ class SamplerConfig(_message.Message):
     def __init__(self, checkpoint_name: _Optional[str] = ..., max_seq_len: _Optional[int] = ..., max_concurrent_sequences: _Optional[int] = ...) -> None: ...
 
 class Sampler(_message.Message):
-    __slots__ = ("id", "config", "state", "model", "version", "created_at", "error", "usage")
+    __slots__ = ("id", "config", "state", "model", "version", "created_at", "error", "usage", "waiting_reason")
     class State(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         STATE_UNSPECIFIED: _ClassVar[Sampler.State]
@@ -112,6 +112,7 @@ class Sampler(_message.Message):
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     USAGE_FIELD_NUMBER: _ClassVar[int]
+    WAITING_REASON_FIELD_NUMBER: _ClassVar[int]
     id: str
     config: SamplerConfig
     state: Sampler.State
@@ -120,7 +121,8 @@ class Sampler(_message.Message):
     created_at: _timestamp_pb2.Timestamp
     error: _errors_pb2.Error
     usage: SamplingUsage
-    def __init__(self, id: _Optional[str] = ..., config: _Optional[_Union[SamplerConfig, _Mapping]] = ..., state: _Optional[_Union[Sampler.State, str]] = ..., model: _Optional[str] = ..., version: _Optional[_Union[_values_pb2.Version, _Mapping]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., error: _Optional[_Union[_errors_pb2.Error, _Mapping]] = ..., usage: _Optional[_Union[SamplingUsage, _Mapping]] = ...) -> None: ...
+    waiting_reason: _values_pb2.WaitingReason
+    def __init__(self, id: _Optional[str] = ..., config: _Optional[_Union[SamplerConfig, _Mapping]] = ..., state: _Optional[_Union[Sampler.State, str]] = ..., model: _Optional[str] = ..., version: _Optional[_Union[_values_pb2.Version, _Mapping]] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., error: _Optional[_Union[_errors_pb2.Error, _Mapping]] = ..., usage: _Optional[_Union[SamplingUsage, _Mapping]] = ..., waiting_reason: _Optional[_Union[_values_pb2.WaitingReason, str]] = ...) -> None: ...
 
 class CreateSamplerRequest(_message.Message):
     __slots__ = ("session_id", "key", "config")

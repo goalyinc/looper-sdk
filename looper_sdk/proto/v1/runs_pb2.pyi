@@ -14,7 +14,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Run(_message.Message):
-    __slots__ = ("id", "project", "config", "state", "epoch", "writer_session_id", "writer_generation", "step", "durable_step", "created_at")
+    __slots__ = ("id", "project", "config", "state", "epoch", "writer_session_id", "writer_generation", "step", "durable_step", "created_at", "waiting_reason")
     class State(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = ()
         STATE_UNSPECIFIED: _ClassVar[Run.State]
@@ -45,6 +45,7 @@ class Run(_message.Message):
     STEP_FIELD_NUMBER: _ClassVar[int]
     DURABLE_STEP_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
+    WAITING_REASON_FIELD_NUMBER: _ClassVar[int]
     id: str
     project: str
     config: _values_pb2.TrainingConfig
@@ -55,7 +56,8 @@ class Run(_message.Message):
     step: int
     durable_step: int
     created_at: _timestamp_pb2.Timestamp
-    def __init__(self, id: _Optional[str] = ..., project: _Optional[str] = ..., config: _Optional[_Union[_values_pb2.TrainingConfig, _Mapping]] = ..., state: _Optional[_Union[Run.State, str]] = ..., epoch: _Optional[int] = ..., writer_session_id: _Optional[str] = ..., writer_generation: _Optional[int] = ..., step: _Optional[int] = ..., durable_step: _Optional[int] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    waiting_reason: _values_pb2.WaitingReason
+    def __init__(self, id: _Optional[str] = ..., project: _Optional[str] = ..., config: _Optional[_Union[_values_pb2.TrainingConfig, _Mapping]] = ..., state: _Optional[_Union[Run.State, str]] = ..., epoch: _Optional[int] = ..., writer_session_id: _Optional[str] = ..., writer_generation: _Optional[int] = ..., step: _Optional[int] = ..., durable_step: _Optional[int] = ..., created_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., waiting_reason: _Optional[_Union[_values_pb2.WaitingReason, str]] = ...) -> None: ...
 
 class CreateRunRequest(_message.Message):
     __slots__ = ("session_id", "key", "config")

@@ -17,6 +17,15 @@ message Version {
   uint64 step = 3;
 }
 
+// Why a run or a sampler that has not started waits.
+enum WaitingReason {
+  // It does not wait, or waits for no reason the service names.
+  WAITING_REASON_UNSPECIFIED = 0;
+  // Its organization's GPUs in use leave no room for it; it starts when
+  // one of its organization's runs or samplers ends.
+  WAITING_REASON_ORG_GPU_LIMIT = 1;
+}
+
 // What a run trains, and how much: Looper sizes the run's GPUs from the
 // three sizing fields, which are fixed for the run's life.
 message TrainingConfig {

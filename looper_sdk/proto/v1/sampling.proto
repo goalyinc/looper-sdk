@@ -89,6 +89,8 @@ message Sampler {
   optional Error error = 7;  // why it failed
   // Its succeeded requests' usage, summed; absent when one predates the count.
   optional SamplingUsage usage = 8;
+  // Why it has not started; unspecified for a run's sampler, whose run says why.
+  WaitingReason waiting_reason = 9;
 }
 
 message CreateSamplerRequest {

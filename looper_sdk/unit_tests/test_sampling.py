@@ -208,6 +208,21 @@ def test_usage_round_trips_alone_and_on_a_status() -> None:
     assert wire.sampler_status_from_proto(wire.sampler_status_to_proto(unknown)).usage is None
 
 
+def test_a_waiting_reason_round_trips_and_one_this_sdk_does_not_know_reads_as_none() -> None:
+    status = SamplerStatus(
+        id="s-1",
+        config=CONFIG,
+        state=SamplerState.STARTING,
+        model="Qwen/Qwen3.5-9B",
+        version=Version(run_id="r", epoch=0, step=40),
+        created_at=datetime(2026, 11, 5, tzinfo=UTC),
+        waiting_reason="org_gpu_limit",
+    )
+    assert wire.sampler_status_from_proto(wire.sampler_status_to_proto(status)) == status
+    # A reason a newer service names reads as none, not as an error.
+    assert wire.waiting_reason_from_proto(2) is None
+
+
 @pytest.mark.parametrize("error", [QueueTimeout, SamplerFailed])
 def test_terminal_sampling_errors_are_registered_and_not_retried(error: type) -> None:
     raised = error("it ended")

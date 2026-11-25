@@ -545,6 +545,7 @@ SamplerStatus(
     created_at: datetime,
     error: LooperError | None = None,
     usage: SamplingUsage | None = None,
+    waiting_reason: Literal['org_gpu_limit'] | None = None,
 )
 ```
 
@@ -558,6 +559,7 @@ SamplerStatus(
 | `created_at` | `datetime` | required | When the service accepted it. |
 | `error` | `LooperError \| None` | `None` | Why it failed, once it has; None otherwise. |
 | `usage` | `SamplingUsage \| None` | `None` | Its succeeded requests' usage, summed when the status was read; None when one of them was recorded before Looper counted tokens. |
+| `waiting_reason` | `Literal['org_gpu_limit'] \| None` | `None` | Why a starting sampler has not started: "org_gpu_limit" while its organization's GPUs in use leave no room for it; None otherwise, and always None for a run's sampler, which waits for its run. |
 
 ## SamplerState
 

@@ -14,6 +14,7 @@ import enum
 import math
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Literal
 
 from looper_sdk._checks import _count, _finite
 from looper_sdk.errors import InvalidArgument, LooperError
@@ -142,6 +143,10 @@ class SamplerStatus:
         usage: Its succeeded requests' usage, summed when the status was
             read; None when one of them was recorded before Looper counted
             tokens.
+        waiting_reason: Why a starting sampler has not started: "org_gpu_limit"
+            while its organization's GPUs in use leave no room for it; None
+            otherwise, and always None for a run's sampler, which waits for
+            its run.
     """
 
     id: str
@@ -152,6 +157,7 @@ class SamplerStatus:
     created_at: datetime
     error: LooperError | None = dataclasses.field(default=None, compare=False)
     usage: SamplingUsage | None = None
+    waiting_reason: Literal["org_gpu_limit"] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.state, SamplerState):

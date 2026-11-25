@@ -11,6 +11,7 @@ the wire requires but the message lacks.
 from __future__ import annotations
 
 from datetime import UTC
+from typing import Literal
 
 from google.protobuf.message import Message
 
@@ -63,6 +64,17 @@ def _arm(message: Message, oneof: str, where: str) -> str:
 
 def version_to_proto(version: Version) -> values_pb2.Version:
     return values_pb2.Version(run_id=version.run_id, epoch=version.epoch, step=version.step)
+
+
+def waiting_reason_to_proto(reason: Literal["org_gpu_limit"] | None) -> values_pb2.WaitingReason:
+    if reason == "org_gpu_limit":
+        return values_pb2.WAITING_REASON_ORG_GPU_LIMIT
+    return values_pb2.WAITING_REASON_UNSPECIFIED
+
+
+def waiting_reason_from_proto(value: int) -> Literal["org_gpu_limit"] | None:
+    # A reason a newer service names is one this SDK cannot show: none.
+    return "org_gpu_limit" if value == values_pb2.WAITING_REASON_ORG_GPU_LIMIT else None
 
 
 def version_from_proto(message: values_pb2.Version) -> Version:
@@ -564,6 +576,7 @@ def sampler_status_to_proto(status: SamplerStatus) -> sampling_pb2.Sampler:
         config=sampler_config_to_proto(status.config),
         state=status.state.name,
         model=status.model,
+        waiting_reason=waiting_reason_to_proto(status.waiting_reason),
     )
     message.created_at.FromDatetime(status.created_at)
     if status.version is not None:
@@ -585,4 +598,5 @@ def sampler_status_from_proto(message: sampling_pb2.Sampler) -> SamplerStatus:
         created_at=message.created_at.ToDatetime(tzinfo=UTC),
         error=error_from_proto(message.error) if message.HasField("error") else None,
         usage=sampling_usage_from_proto(message.usage) if message.HasField("usage") else None,
+        waiting_reason=waiting_reason_from_proto(message.waiting_reason),
     )

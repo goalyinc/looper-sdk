@@ -42,6 +42,8 @@ message Run {
   // The newest step a restore point or a state checkpoint covers.
   uint64 durable_step = 9;
   google.protobuf.Timestamp created_at = 10;
+  // Why it waits for a trainer; unspecified when it does not.
+  WaitingReason waiting_reason = 11;
 }
 
 // Creates a run, with the caller's session as its writer.

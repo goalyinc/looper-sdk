@@ -27,7 +27,7 @@ from looper_sdk.proto.v1 import errors_pb2 as looper__sdk_dot_proto_dot_v1_dot_e
 from looper_sdk.proto.v1 import values_pb2 as looper__sdk_dot_proto_dot_v1_dot_values__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"looper_sdk/proto/v1/sampling.proto\x12\tlooper.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a looper_sdk/proto/v1/errors.proto\x1a looper_sdk/proto/v1/values.proto\"`\n\x0eSamplingParams\x12\x12\n\nmax_tokens\x18\x01 \x01(\r\x12\x13\n\x0btemperature\x18\x02 \x01(\x01\x12\r\n\x05top_p\x18\x03 \x01(\x01\x12\x16\n\x0estop_token_ids\x18\x04 \x03(\x05\"U\n\rSampleRequest\x12\x0e\n\x06prompt\x18\x01 \x03(\x05\x12)\n\x06params\x18\x02 \x01(\x0b\x32\x19.looper.v1.SamplingParams\x12\t\n\x01n\x18\x03 \x01(\r\"\x86\x02\n\x0eSampleSequence\x12\x11\n\ttoken_ids\x18\x01 \x03(\x05\x12\x10\n\x08logprobs\x18\x02 \x03(\x02\x12=\n\rfinish_reason\x18\x03 \x01(\x0e\x32&.looper.v1.SampleSequence.FinishReason\x12\x15\n\rcached_tokens\x18\x04 \x01(\r\x12(\n\x07version\x18\x05 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\"C\n\x0c\x46inishReason\x12\x1d\n\x19\x46INISH_REASON_UNSPECIFIED\x10\x00\x12\x08\n\x04STOP\x10\x01\x12\n\n\x06LENGTH\x10\x02\x42\n\n\x08_version\"c\n\rSamplingUsage\x12\x19\n\x11num_prompt_tokens\x18\x01 \x01(\x04\x12\x1c\n\x14num_generated_tokens\x18\x02 \x01(\x04\x12\x19\n\x11num_cached_tokens\x18\x03 \x01(\x04\"\x9a\x01\n\x0cSampleResult\x12,\n\tsequences\x18\x01 \x03(\x0b\x32\x19.looper.v1.SampleSequence\x12\r\n\x05model\x18\x02 \x01(\t\x12\x17\n\x0f\x63heckpoint_name\x18\x03 \x01(\t\x12(\n\x07version\x18\x04 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\x42\n\n\x08_version\"_\n\rSamplerConfig\x12\x17\n\x0f\x63heckpoint_name\x18\x01 \x01(\t\x12\x13\n\x0bmax_seq_len\x18\x02 \x01(\r\x12 \n\x18max_concurrent_sequences\x18\x03 \x01(\r\"\xa5\x03\n\x07Sampler\x12\n\n\x02id\x18\x01 \x01(\t\x12(\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x18.looper.v1.SamplerConfig\x12\'\n\x05state\x18\x03 \x01(\x0e\x32\x18.looper.v1.Sampler.State\x12\r\n\x05model\x18\x04 \x01(\t\x12(\n\x07version\x18\x05 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12$\n\x05\x65rror\x18\x07 \x01(\x0b\x32\x10.looper.v1.ErrorH\x01\x88\x01\x01\x12,\n\x05usage\x18\x08 \x01(\x0b\x32\x18.looper.v1.SamplingUsageH\x02\x88\x01\x01\"^\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\x0c\n\x08STARTING\x10\x01\x12\t\n\x05READY\x10\x02\x12\n\n\x06\x46\x41ILED\x10\x03\x12\x0c\n\x08STOPPING\x10\x04\x12\x0b\n\x07STOPPED\x10\x05\x42\n\n\x08_versionB\x08\n\x06_errorB\x08\n\x06_usage\"a\n\x14\x43reateSamplerRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12(\n\x06\x63onfig\x18\x03 \x01(\x0b\x32\x18.looper.v1.SamplerConfig\"<\n\x15\x43reateSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"9\n\x12GetSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"(\n\x12StopSamplerRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\":\n\x13StopSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"\xc9\x03\n\x0fSampleOperation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\x12\n\nsampler_id\x18\x03 \x01(\t\x12/\n\x05state\x18\x04 \x01(\x0e\x32 .looper.v1.SampleOperation.State\x12$\n\x05\x65rror\x18\x05 \x01(\x0b\x32\x10.looper.v1.ErrorH\x00\x88\x01\x01\x12<\n\x13raw_data_expired_at\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01\x88\x01\x01\x12,\n\x06result\x18\x06 \x01(\x0b\x32\x17.looper.v1.SampleResultH\x02\x88\x01\x01\x12,\n\x05usage\x18\x08 \x01(\x0b\x32\x18.looper.v1.SamplingUsageH\x03\x88\x01\x01\"a\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\n\n\x06QUEUED\x10\x01\x12\x0b\n\x07RUNNING\x10\x02\x12\r\n\tSUCCEEDED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\x12\r\n\tCANCELLED\x10\x05\x42\x08\n\x06_errorB\x16\n\x14_raw_data_expired_atB\t\n\x07_resultB\x08\n\x06_usage\"a\n\x13SubmitSampleRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12)\n\x07request\x18\x03 \x01(\x0b\x32\x18.looper.v1.SampleRequest\"E\n\x14SubmitSampleResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperation\"K\n\x1aGetSampleOperationResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperation\"W\n\x1b\x41waitSampleOperationRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x16\n\ttimeout_s\x18\x02 \x01(\x01H\x00\x88\x01\x01\x42\x0c\n\n_timeout_s\"M\n\x1c\x41waitSampleOperationResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperationb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"looper_sdk/proto/v1/sampling.proto\x12\tlooper.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a looper_sdk/proto/v1/errors.proto\x1a looper_sdk/proto/v1/values.proto\"`\n\x0eSamplingParams\x12\x12\n\nmax_tokens\x18\x01 \x01(\r\x12\x13\n\x0btemperature\x18\x02 \x01(\x01\x12\r\n\x05top_p\x18\x03 \x01(\x01\x12\x16\n\x0estop_token_ids\x18\x04 \x03(\x05\"U\n\rSampleRequest\x12\x0e\n\x06prompt\x18\x01 \x03(\x05\x12)\n\x06params\x18\x02 \x01(\x0b\x32\x19.looper.v1.SamplingParams\x12\t\n\x01n\x18\x03 \x01(\r\"\x86\x02\n\x0eSampleSequence\x12\x11\n\ttoken_ids\x18\x01 \x03(\x05\x12\x10\n\x08logprobs\x18\x02 \x03(\x02\x12=\n\rfinish_reason\x18\x03 \x01(\x0e\x32&.looper.v1.SampleSequence.FinishReason\x12\x15\n\rcached_tokens\x18\x04 \x01(\r\x12(\n\x07version\x18\x05 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\"C\n\x0c\x46inishReason\x12\x1d\n\x19\x46INISH_REASON_UNSPECIFIED\x10\x00\x12\x08\n\x04STOP\x10\x01\x12\n\n\x06LENGTH\x10\x02\x42\n\n\x08_version\"c\n\rSamplingUsage\x12\x19\n\x11num_prompt_tokens\x18\x01 \x01(\x04\x12\x1c\n\x14num_generated_tokens\x18\x02 \x01(\x04\x12\x19\n\x11num_cached_tokens\x18\x03 \x01(\x04\"\x9a\x01\n\x0cSampleResult\x12,\n\tsequences\x18\x01 \x03(\x0b\x32\x19.looper.v1.SampleSequence\x12\r\n\x05model\x18\x02 \x01(\t\x12\x17\n\x0f\x63heckpoint_name\x18\x03 \x01(\t\x12(\n\x07version\x18\x04 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\x42\n\n\x08_version\"_\n\rSamplerConfig\x12\x17\n\x0f\x63heckpoint_name\x18\x01 \x01(\t\x12\x13\n\x0bmax_seq_len\x18\x02 \x01(\r\x12 \n\x18max_concurrent_sequences\x18\x03 \x01(\r\"\xd7\x03\n\x07Sampler\x12\n\n\x02id\x18\x01 \x01(\t\x12(\n\x06\x63onfig\x18\x02 \x01(\x0b\x32\x18.looper.v1.SamplerConfig\x12\'\n\x05state\x18\x03 \x01(\x0e\x32\x18.looper.v1.Sampler.State\x12\r\n\x05model\x18\x04 \x01(\t\x12(\n\x07version\x18\x05 \x01(\x0b\x32\x12.looper.v1.VersionH\x00\x88\x01\x01\x12.\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12$\n\x05\x65rror\x18\x07 \x01(\x0b\x32\x10.looper.v1.ErrorH\x01\x88\x01\x01\x12,\n\x05usage\x18\x08 \x01(\x0b\x32\x18.looper.v1.SamplingUsageH\x02\x88\x01\x01\x12\x30\n\x0ewaiting_reason\x18\t \x01(\x0e\x32\x18.looper.v1.WaitingReason\"^\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\x0c\n\x08STARTING\x10\x01\x12\t\n\x05READY\x10\x02\x12\n\n\x06\x46\x41ILED\x10\x03\x12\x0c\n\x08STOPPING\x10\x04\x12\x0b\n\x07STOPPED\x10\x05\x42\n\n\x08_versionB\x08\n\x06_errorB\x08\n\x06_usage\"a\n\x14\x43reateSamplerRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12(\n\x06\x63onfig\x18\x03 \x01(\x0b\x32\x18.looper.v1.SamplerConfig\"<\n\x15\x43reateSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"9\n\x12GetSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"(\n\x12StopSamplerRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\":\n\x13StopSamplerResponse\x12#\n\x07sampler\x18\x01 \x01(\x0b\x32\x12.looper.v1.Sampler\"\xc9\x03\n\x0fSampleOperation\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12\x12\n\nsampler_id\x18\x03 \x01(\t\x12/\n\x05state\x18\x04 \x01(\x0e\x32 .looper.v1.SampleOperation.State\x12$\n\x05\x65rror\x18\x05 \x01(\x0b\x32\x10.looper.v1.ErrorH\x00\x88\x01\x01\x12<\n\x13raw_data_expired_at\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01\x88\x01\x01\x12,\n\x06result\x18\x06 \x01(\x0b\x32\x17.looper.v1.SampleResultH\x02\x88\x01\x01\x12,\n\x05usage\x18\x08 \x01(\x0b\x32\x18.looper.v1.SamplingUsageH\x03\x88\x01\x01\"a\n\x05State\x12\x15\n\x11STATE_UNSPECIFIED\x10\x00\x12\n\n\x06QUEUED\x10\x01\x12\x0b\n\x07RUNNING\x10\x02\x12\r\n\tSUCCEEDED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\x12\r\n\tCANCELLED\x10\x05\x42\x08\n\x06_errorB\x16\n\x14_raw_data_expired_atB\t\n\x07_resultB\x08\n\x06_usage\"a\n\x13SubmitSampleRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12)\n\x07request\x18\x03 \x01(\x0b\x32\x18.looper.v1.SampleRequest\"E\n\x14SubmitSampleResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperation\"K\n\x1aGetSampleOperationResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperation\"W\n\x1b\x41waitSampleOperationRequest\x12\x12\n\nsession_id\x18\x01 \x01(\t\x12\x16\n\ttimeout_s\x18\x02 \x01(\x01H\x00\x88\x01\x01\x42\x0c\n\n_timeout_s\"M\n\x1c\x41waitSampleOperationResponse\x12-\n\toperation\x18\x01 \x01(\x0b\x32\x1a.looper.v1.SampleOperationb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -49,31 +49,31 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SAMPLERCONFIG']._serialized_start=858
   _globals['_SAMPLERCONFIG']._serialized_end=953
   _globals['_SAMPLER']._serialized_start=956
-  _globals['_SAMPLER']._serialized_end=1377
-  _globals['_SAMPLER_STATE']._serialized_start=1251
-  _globals['_SAMPLER_STATE']._serialized_end=1345
-  _globals['_CREATESAMPLERREQUEST']._serialized_start=1379
-  _globals['_CREATESAMPLERREQUEST']._serialized_end=1476
-  _globals['_CREATESAMPLERRESPONSE']._serialized_start=1478
-  _globals['_CREATESAMPLERRESPONSE']._serialized_end=1538
-  _globals['_GETSAMPLERRESPONSE']._serialized_start=1540
-  _globals['_GETSAMPLERRESPONSE']._serialized_end=1597
-  _globals['_STOPSAMPLERREQUEST']._serialized_start=1599
-  _globals['_STOPSAMPLERREQUEST']._serialized_end=1639
-  _globals['_STOPSAMPLERRESPONSE']._serialized_start=1641
-  _globals['_STOPSAMPLERRESPONSE']._serialized_end=1699
-  _globals['_SAMPLEOPERATION']._serialized_start=1702
-  _globals['_SAMPLEOPERATION']._serialized_end=2159
-  _globals['_SAMPLEOPERATION_STATE']._serialized_start=2007
-  _globals['_SAMPLEOPERATION_STATE']._serialized_end=2104
-  _globals['_SUBMITSAMPLEREQUEST']._serialized_start=2161
-  _globals['_SUBMITSAMPLEREQUEST']._serialized_end=2258
-  _globals['_SUBMITSAMPLERESPONSE']._serialized_start=2260
-  _globals['_SUBMITSAMPLERESPONSE']._serialized_end=2329
-  _globals['_GETSAMPLEOPERATIONRESPONSE']._serialized_start=2331
-  _globals['_GETSAMPLEOPERATIONRESPONSE']._serialized_end=2406
-  _globals['_AWAITSAMPLEOPERATIONREQUEST']._serialized_start=2408
-  _globals['_AWAITSAMPLEOPERATIONREQUEST']._serialized_end=2495
-  _globals['_AWAITSAMPLEOPERATIONRESPONSE']._serialized_start=2497
-  _globals['_AWAITSAMPLEOPERATIONRESPONSE']._serialized_end=2574
+  _globals['_SAMPLER']._serialized_end=1427
+  _globals['_SAMPLER_STATE']._serialized_start=1301
+  _globals['_SAMPLER_STATE']._serialized_end=1395
+  _globals['_CREATESAMPLERREQUEST']._serialized_start=1429
+  _globals['_CREATESAMPLERREQUEST']._serialized_end=1526
+  _globals['_CREATESAMPLERRESPONSE']._serialized_start=1528
+  _globals['_CREATESAMPLERRESPONSE']._serialized_end=1588
+  _globals['_GETSAMPLERRESPONSE']._serialized_start=1590
+  _globals['_GETSAMPLERRESPONSE']._serialized_end=1647
+  _globals['_STOPSAMPLERREQUEST']._serialized_start=1649
+  _globals['_STOPSAMPLERREQUEST']._serialized_end=1689
+  _globals['_STOPSAMPLERRESPONSE']._serialized_start=1691
+  _globals['_STOPSAMPLERRESPONSE']._serialized_end=1749
+  _globals['_SAMPLEOPERATION']._serialized_start=1752
+  _globals['_SAMPLEOPERATION']._serialized_end=2209
+  _globals['_SAMPLEOPERATION_STATE']._serialized_start=2057
+  _globals['_SAMPLEOPERATION_STATE']._serialized_end=2154
+  _globals['_SUBMITSAMPLEREQUEST']._serialized_start=2211
+  _globals['_SUBMITSAMPLEREQUEST']._serialized_end=2308
+  _globals['_SUBMITSAMPLERESPONSE']._serialized_start=2310
+  _globals['_SUBMITSAMPLERESPONSE']._serialized_end=2379
+  _globals['_GETSAMPLEOPERATIONRESPONSE']._serialized_start=2381
+  _globals['_GETSAMPLEOPERATIONRESPONSE']._serialized_end=2456
+  _globals['_AWAITSAMPLEOPERATIONREQUEST']._serialized_start=2458
+  _globals['_AWAITSAMPLEOPERATIONREQUEST']._serialized_end=2545
+  _globals['_AWAITSAMPLEOPERATIONRESPONSE']._serialized_start=2547
+  _globals['_AWAITSAMPLEOPERATIONRESPONSE']._serialized_end=2624
 # @@protoc_insertion_point(module_scope)
