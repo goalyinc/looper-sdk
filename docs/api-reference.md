@@ -339,7 +339,9 @@ async def wait_until_ready(*, timeout_s: float | None = None) -> None
 
 Wait until the run is active and takes work. `RunStateLost`,
 `Cancelled` or `RunSuspended` if it failed, was deleted or is
-suspended instead. Waiting starts and resumes nothing.
+suspended instead. Waiting starts and resumes nothing. While its
+organization's GPU limit holds it back, it logs a warning each time
+that reason appears.
 
 ### TrainingClient.status
 
@@ -363,7 +365,14 @@ finishes, and its GPUs are released.
 A run, as the service holds it now.
 
 ```python
-RunStatus(*, state: RunState, epoch: int, step: int, durable_step: int)
+RunStatus(
+    *,
+    state: RunState,
+    epoch: int,
+    step: int,
+    durable_step: int,
+    waiting_reason: Literal['org_gpu_limit'] | None = None,
+)
 ```
 
 | Field | Type | Default | Description |
@@ -372,6 +381,7 @@ RunStatus(*, state: RunState, epoch: int, step: int, durable_step: int)
 | `epoch` | `int` | required | The run's epoch; a rollback starts the next one. |
 | `step` | `int` | required | Completed optimizer steps. |
 | `durable_step` | `int` | required | The newest step a restore point or a state checkpoint covers. |
+| `waiting_reason` | `Literal['org_gpu_limit'] \| None` | `None` | Why a queued run has no trainer yet: "org_gpu_limit" while its organization's GPUs in use leave no room for it; None otherwise. |
 
 ## RunState
 
@@ -459,7 +469,9 @@ async def wait_until_ready(*, timeout_s: float | None = None) -> None
 
 Return once the sampler is ready: its model converted, loaded and
 serving. `SamplerFailed` if it ended instead; TimeoutError once
-`timeout_s` passed, which leaves it starting.
+`timeout_s` passed, which leaves it starting. While its organization's
+GPU limit holds it back, it logs a warning each time that reason
+appears.
 
 ### SamplingClient.sample
 

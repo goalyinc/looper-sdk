@@ -1,6 +1,7 @@
 """SDK readiness and explicit closure, without a server."""
 
 import asyncio
+import logging
 
 import httpx
 import pytest
@@ -14,7 +15,7 @@ from looper_sdk import (
     SessionClosed,
     TrainingConfig,
 )
-from looper_sdk.proto.v1 import operations_pb2, runs_pb2, sessions_pb2
+from looper_sdk.proto.v1 import operations_pb2, runs_pb2, sessions_pb2, values_pb2
 from looper_sdk.transport import PROTOBUF
 
 
@@ -39,6 +40,7 @@ class Api:
         self.created = asyncio.Event()
         self.polled = asyncio.Event()
         self.block = False
+        self.waiting_reason = values_pb2.WAITING_REASON_UNSPECIFIED
 
     async def __call__(self, request):
         self.calls.append(request)
@@ -60,6 +62,8 @@ class Api:
             if self.block:
                 await asyncio.Event().wait()
             run.state = next(self.states, runs_pb2.Run.STARTING)
+            if run.state == runs_pb2.Run.QUEUED:
+                run.waiting_reason = self.waiting_reason
             return answer(runs_pb2.GetRunResponse(run=run))
         if path.endswith(":await"):
             self.polled.set()
@@ -82,6 +86,21 @@ def test_creation_waits_for_the_run_to_be_active():
             assert sum(r.method == "GET" for r in api.calls) >= 2
 
     asyncio.run(run())
+
+
+def test_a_run_held_back_by_its_orgs_gpu_limit_warns_once(caplog, monkeypatch):
+    monkeypatch.setattr("looper_sdk.training.READINESS_POLL_S", 0.01)
+
+    async def run():
+        api = Api((runs_pb2.Run.QUEUED,) * 3 + (runs_pb2.Run.ACTIVE,))
+        api.waiting_reason = values_pb2.WAITING_REASON_ORG_GPU_LIMIT
+        async with await connect(api) as service:
+            client = await service.create_training_client(CONFIG)
+            assert (await client.status()).waiting_reason is None  # STARTING after ACTIVE
+
+    asyncio.run(run())
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert warnings == ["Run r is waiting: its organization is at its GPU limit"]
 
 
 def test_close_cancels_pending_creation_and_rejects_new_work():

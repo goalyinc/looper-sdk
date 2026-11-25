@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import logging
 from uuid import NAMESPACE_URL, uuid5
 
 import httpx
@@ -35,7 +36,7 @@ from looper_sdk.errors import (
     Unavailable,
 )
 from looper_sdk.operations import OperationState
-from looper_sdk.proto.v1 import sampling_pb2, sessions_pb2
+from looper_sdk.proto.v1 import sampling_pb2, sessions_pb2, values_pb2
 from looper_sdk.sampling import FinishReason, SamplingUsage
 from looper_sdk.transport import PROTOBUF
 from looper_sdk.values import Version
@@ -85,6 +86,7 @@ class Api:
         self.awaits: list = []  # each await's operation, in turn; then running
         self.read: sampling_pb2.SampleOperation | None = None  # a GET's answer; else running
         self.keys: list[str] = []
+        self.waiting_reason = values_pb2.WAITING_REASON_UNSPECIFIED
 
     async def __call__(self, request: httpx.Request) -> httpx.Response:
         self.calls.append(request)
@@ -105,7 +107,10 @@ class Api:
             )
         if path == "/v1/samplers/m":
             state = self.states.pop(0) if len(self.states) > 1 else self.states[0]
-            return answer(sampling_pb2.GetSamplerResponse(sampler=sampler(state)))
+            message = sampler(state)
+            if state == sampling_pb2.Sampler.STARTING:
+                message.waiting_reason = self.waiting_reason
+            return answer(sampling_pb2.GetSamplerResponse(sampler=message))
         if path.endswith(":stop"):
             return answer(
                 sampling_pb2.StopSamplerResponse(sampler=sampler(sampling_pb2.Sampler.STOPPING))
@@ -751,3 +756,16 @@ def test_retry_hints_override_backoff_only_when_finite_and_nonnegative(hint, exp
             assert sleeps == [expected]
 
     asyncio.run(run())
+
+
+def test_a_sampler_held_back_by_its_orgs_gpu_limit_warns_once(caplog) -> None:
+    async def run() -> None:
+        api = Api(states=(sampling_pb2.Sampler.STARTING,) * 3 + (sampling_pb2.Sampler.READY,))
+        api.waiting_reason = values_pb2.WAITING_REASON_ORG_GPU_LIMIT
+        async with await connect(api) as service:
+            client = await service.create_sampling_client(CONFIG)
+            assert (await client.status()).waiting_reason is None  # READY
+
+    asyncio.run(run())
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert warnings == ["Sampler m is waiting: its organization is at its GPU limit"]

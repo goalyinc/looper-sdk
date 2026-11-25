@@ -88,12 +88,21 @@ class SamplingClient:
     async def wait_until_ready(self, *, timeout_s: float | None = None) -> None:
         """Return once the sampler is ready: its model converted, loaded and
         serving. ``SamplerFailed`` if it ended instead; TimeoutError once
-        ``timeout_s`` passed, which leaves it starting."""
+        ``timeout_s`` passed, which leaves it starting. While its organization's
+        GPU limit holds it back, it logs a warning each time that reason
+        appears."""
         if timeout_s is not None and (not math.isfinite(timeout_s) or timeout_s < 0):
             raise ValueError("timeout_s must be finite and nonnegative, or None")
         async with asyncio.timeout(timeout_s):
+            waiting = None
             while True:
                 status = await self.status()
+                if status.waiting_reason is not None and status.waiting_reason != waiting:
+                    log.warning(
+                        "Sampler %s is waiting: its organization is at its GPU limit",
+                        self.sampler_id,
+                    )
+                waiting = status.waiting_reason
                 if status.state is SamplerState.READY:
                     return
                 if status.state in _ENDED:

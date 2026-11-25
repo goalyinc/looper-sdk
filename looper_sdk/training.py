@@ -27,9 +27,10 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import enum
+import logging
 import math
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -53,6 +54,7 @@ from looper_sdk.transport import Session, session_operation
 from looper_sdk.values import Datum
 
 READINESS_POLL_S = 0.5
+log = logging.getLogger(__name__)
 
 
 class RunState(enum.StrEnum):
@@ -85,12 +87,16 @@ class RunStatus:
         step: Completed optimizer steps.
         durable_step: The newest step a restore point or a state checkpoint
             covers.
+        waiting_reason: Why a queued run has no trainer yet: "org_gpu_limit"
+            while its organization's GPUs in use leave no room for it; None
+            otherwise.
     """
 
     state: RunState
     epoch: int
     step: int
     durable_step: int
+    waiting_reason: Literal["org_gpu_limit"] | None = None
 
 
 class TrainingClient:
@@ -336,12 +342,20 @@ class TrainingClient:
     async def wait_until_ready(self, *, timeout_s: float | None = None) -> None:
         """Wait until the run is active and takes work. ``RunStateLost``,
         ``Cancelled`` or ``RunSuspended`` if it failed, was deleted or is
-        suspended instead. Waiting starts and resumes nothing."""
+        suspended instead. Waiting starts and resumes nothing. While its
+        organization's GPU limit holds it back, it logs a warning each time
+        that reason appears."""
         if timeout_s is not None and (not math.isfinite(timeout_s) or timeout_s < 0):
             raise ValueError("timeout_s must be finite and nonnegative, or None")
         async with asyncio.timeout(timeout_s):
+            waiting = None
             while True:
                 status = await self.status()
+                if status.waiting_reason is not None and status.waiting_reason != waiting:
+                    log.warning(
+                        "Run %s is waiting: its organization is at its GPU limit", self.run_id
+                    )
+                waiting = status.waiting_reason
                 if status.state is RunState.ACTIVE:
                     self._adopt_epoch(status.epoch)
                     return
@@ -361,6 +375,7 @@ class TrainingClient:
             epoch=run.epoch,
             step=run.step,
             durable_step=run.durable_step,
+            waiting_reason=wire.waiting_reason_from_proto(run.waiting_reason),
         )
 
     @session_operation
