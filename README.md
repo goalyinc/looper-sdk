@@ -17,7 +17,7 @@ This is a beta: the API may change between releases, so pin the version.
 Python 3.12 or newer.
 
 ```bash
-pip install "goaly-looper==0.1.0b5"
+pip install "goaly-looper==0.1.0b6"
 ```
 
 The import package is `looper_sdk`. The SDK sends token ids, never text, so

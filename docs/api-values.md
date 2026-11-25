@@ -2,7 +2,7 @@
 
 The values a program builds and the results it reads. Each is frozen and checks itself when it is made: an invalid one raises `InvalidArgument`, before anything is sent.
 
-Generated from the docstrings of goaly-looper 0.1.0b5. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
+Generated from the docstrings of goaly-looper 0.1.0b6. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
 
 ## TrainingConfig
 

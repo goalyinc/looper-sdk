@@ -2,7 +2,7 @@
 
 The clients a program holds: its session, each run it trains, each operation it submits, and each sampler it samples.
 
-Generated from the docstrings of goaly-looper 0.1.0b5. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
+Generated from the docstrings of goaly-looper 0.1.0b6. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
 
 ## ServiceClient
 

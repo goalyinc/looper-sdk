@@ -2,7 +2,7 @@
 
 Every failure the SDK raises. An error from the service carries its code, whose fault it is, and whether the same request may succeed later, as data: route on `retryable`, never on the message.
 
-Generated from the docstrings of goaly-looper 0.1.0b5. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
+Generated from the docstrings of goaly-looper 0.1.0b6. Import every name from `looper_sdk`. The reference has three pages: [clients](api-reference.md), [values](api-values.md) and [errors](api-errors.md).
 
 ## Errors at a glance
 
