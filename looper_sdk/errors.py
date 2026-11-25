@@ -119,7 +119,9 @@ class PermissionDenied(LooperError):
 
 
 class QuotaExceeded(LooperError):
-    """A save over the project's stored bytes; retry once space is freed."""
+    """A save over the project's stored bytes, or a run or sampler that needs more
+    GPUs than its organization may use. Retry a save once space is freed; a run or
+    sampler that large is refused again until the organization's limit is raised."""
 
     code = ErrorCode.QUOTA_EXCEEDED
 

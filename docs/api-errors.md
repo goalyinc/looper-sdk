@@ -13,7 +13,7 @@ Generated from the docstrings of goaly-looper 0.1.0b5. Import every name from `l
 | `Unauthenticated` | `LooperError` | `UNAUTHENTICATED` | no | `user` | No credential, one that is not an API key, or a key the service does not know, has revoked or let expire. |
 | `SpendRefused` | `LooperError` | `SPEND_REFUSED` | no | `user` | Billing refuses resource creation or compute; retry after restoring eligibility. |
 | `PermissionDenied` | `LooperError` | `PERMISSION_DENIED` | no | `user` | The caller may not make this call, such as a submit to a run another session writes. |
-| `QuotaExceeded` | `LooperError` | `QUOTA_EXCEEDED` | no | `user` | A save over the project's stored bytes; retry once space is freed. |
+| `QuotaExceeded` | `LooperError` | `QUOTA_EXCEEDED` | no | `user` | A save over the project's stored bytes, or a run or sampler that needs more GPUs than its organization may use. |
 | `NotFound` | `LooperError` | `NOT_FOUND` | no | `user` | No such session, run, operation, sampler or checkpoint in the caller's organization. |
 | `IdempotencyConflict` | `LooperError` | `IDEMPOTENCY_CONFLICT` | no | `user` | A key reused, in the same epoch of the run, with another payload. |
 | `WriterSuperseded` | `LooperError` | `WRITER_SUPERSEDED` | no | `user` | Another session took the run over. |
